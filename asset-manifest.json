@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/whatsApp-chatting-app/static/css/main.735a1f3d.css",
+    "main.js": "/whatsApp-chatting-app/static/js/main.635b806d.js",
+    "static/js/787.08de4dfe.chunk.js": "/whatsApp-chatting-app/static/js/787.08de4dfe.chunk.js",
+    "static/media/logo.svg": "/whatsApp-chatting-app/static/media/logo.6ce24c58023cc2f8fd88fe9d219db6c6.svg",
+    "index.html": "/whatsApp-chatting-app/index.html",
+    "main.735a1f3d.css.map": "/whatsApp-chatting-app/static/css/main.735a1f3d.css.map",
+    "main.635b806d.js.map": "/whatsApp-chatting-app/static/js/main.635b806d.js.map",
+    "787.08de4dfe.chunk.js.map": "/whatsApp-chatting-app/static/js/787.08de4dfe.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.735a1f3d.css",
+    "static/js/main.635b806d.js"
+  ]
+}

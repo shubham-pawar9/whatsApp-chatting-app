@@ -7,16 +7,17 @@ import SelectionHeader from "../SelectionHeader";
 const Chat = ({
   chatSelect,
   setChatActive,
-  chattingObjArray,
-  setChattingObjArray,
+  personMsg,
+  setPersonMsg,
+  personMsgTime,
+  setPersonMsgTime,
 }) => {
   const [time, setTime] = useState(() =>
     new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   );
   const [currTime, setCurrTime] = useState("");
-  const [personMsg, setPersonMsg] = useState([]);
+
   const [autoBotMsg, setAutoBotMsg] = useState([]);
-  const [personMsgTime, setPersonMsgTime] = useState([]);
   const [inputBoxMsg, setInputBoxMsg] = useState("");
   const [botStatus, setBotStatus] = useState(chatSelect.status);
   const [chatDivHeight, setChatDivHeight] = useState(window.innerHeight);
@@ -59,22 +60,6 @@ const Chat = ({
   const timeoutRef = useRef();
   const divRef = useRef(null);
   const fileInputRef = useRef();
-
-  const handlePersonMsg = () => {
-    let accumulatedMsg = [];
-    let accumulatedTime = [];
-
-    chatingObject.forEach((item) => {
-      accumulatedMsg = accumulatedMsg.concat(item["Shubham"].msg);
-      accumulatedTime = accumulatedTime.concat(item["Shubham"].time);
-    });
-
-    setPersonMsg(accumulatedMsg);
-    setPersonMsgTime(accumulatedTime);
-  };
-  useEffect(() => {
-    handlePersonMsg();
-  }, []);
   useEffect(() => {
     const handleResize = () => {
       setChatDivHeight(window.innerHeight);
@@ -93,6 +78,41 @@ const Chat = ({
     setInputBoxMsg(e.target.value);
     setCurrTime(time);
   };
+
+  const handlePersonMsgDetails = (prevDetails, currentTime) => {
+    const existingChatSelect = personMsg.findIndex(
+      (item) => item.name === chatSelect.name
+    );
+    if (existingChatSelect !== -1) {
+      setPersonMsg((prev) => {
+        const newArray = [...prev];
+        // Check if msg is already an array
+        newArray[existingChatSelect].msg = Array.isArray(
+          newArray[existingChatSelect].msg
+        )
+          ? [...newArray[existingChatSelect].msg, prevDetails]
+          : [prevDetails];
+
+        // Assuming currentTime is available here
+        newArray[existingChatSelect].time = Array.isArray(
+          newArray[existingChatSelect].time
+        )
+          ? [...newArray[existingChatSelect].time, currentTime]
+          : [currentTime];
+        return newArray;
+      });
+    } else {
+      setPersonMsg((prev) => [
+        ...prev,
+        {
+          name: chatSelect.name,
+          msg: [...(prev?.msg ?? []), prevDetails],
+          time: [...(prev?.time ?? []), currentTime],
+        },
+      ]);
+    }
+  };
+
   const handleSubmitInputMsg = () => {
     const currentTime = new Date().toLocaleTimeString([], {
       hour: "2-digit",
@@ -110,32 +130,10 @@ const Chat = ({
         },
       },
     ]);
-    setPersonMsg((prevMsg) => [...prevMsg, inputBoxMsg]);
-    console.log(inputBoxMsg);
+    handlePersonMsgDetails(inputBoxMsg, currentTime);
     setPersonMsgTime((prevTime) => [...prevTime, currentTime]);
     setInputBoxMsg("");
     setEmojiStatus(false);
-    const existingObjectIndex = chattingObjArray.findIndex(
-      (item) => item.name === chatSelect.name
-    );
-    console.log(existingObjectIndex);
-    if (existingObjectIndex !== -1) {
-      setChattingObjArray((prev) => {
-        const newArray = [...prev];
-        // Check if msg is already an array
-        newArray[existingObjectIndex].msg = Array.isArray(
-          newArray[existingObjectIndex].msg
-        )
-          ? [...newArray[existingObjectIndex].msg, personMsg]
-          : [personMsg];
-        return newArray;
-      });
-    } else {
-      setChattingObjArray((prev) => [
-        ...prev,
-        { name: chatSelect.name, msg: [personMsg] },
-      ]);
-    }
   };
 
   const handleBotReplyMsg = (chatingObject) => {
@@ -145,9 +143,7 @@ const Chat = ({
       ];
     if (latestUserMsg) {
       const userWords = latestUserMsg.toLowerCase().split(" ");
-      //   const matchedKey = Object.keys(botChattingObject).find((key) =>
-      //     userWords.some((word) => key.toLowerCase().includes(word.toLowerCase()))
-      //   );
+
       let matchedKey;
       userWords[0].length > 20
         ? (matchedKey = "img")
@@ -166,7 +162,7 @@ const Chat = ({
         minute: "2-digit",
       });
       setAutoBotMsg(response);
-      console.log(response);
+      // console.log(response);
       setChatingObject((prevChats) => [
         {
           Shubham: {
@@ -199,7 +195,7 @@ const Chat = ({
     handleBotReplyMsg(chatingObject);
   }, [chatingObject]);
   const handleShowBotMsg = (botMsg, currentTime) => {
-    setPersonMsg((prevMsg) => [...prevMsg, botMsg]);
+    handlePersonMsgDetails(botMsg, currentTime);
     setPersonMsgTime((prevTime) => [...prevTime, currentTime]);
   };
 
@@ -216,15 +212,11 @@ const Chat = ({
 
       reader.onload = (event) => {
         const imageUrl = event.target.result;
-
-        // Now you can use `imageUrl` in your component state or wherever needed
-        // console.log("Selected file:", file);
-        // console.log("Image URL:", imageUrl);
         const currentTime = new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
         });
-        setPersonMsg((prevMsg) => [...prevMsg, imageUrl]);
+        handlePersonMsgDetails(imageUrl, currentTime);
         setPersonMsgTime((prevTime) => [...prevTime, currentTime]);
         setChatingObject((prevChats) => [
           {
@@ -249,62 +241,62 @@ const Chat = ({
   };
   const handleEmojiSelect = (e) => {
     setInputBoxMsg((prevMsg) => prevMsg + " " + e.target.innerHTML);
-    console.log(e.target.innerHTML);
+    // console.log(e.target.innerHTML);
   };
   let pressTimer;
 
-  const handleTouchStart = (e) => {
-    pressTimer = setTimeout(() => {
-      const parentDiv = findParentDiv(e.target);
-      if (parentDiv) {
-        console.log(parentDiv);
-        setLongPressDetected(true);
-        setSelectMsgStatus(true);
-        document
-          .getElementById(parentDiv.id)
-          .parentElement.classList.add("selected");
-        setSelectMsg(
-          document.getElementById(parentDiv.id).childNodes[0].innerHTML
-        );
-        // setParentId(parentDiv.id);
-      }
-    }, 1000);
-  };
+  // const handleTouchStart = (e) => {
+  //   pressTimer = setTimeout(() => {
+  //     const parentDiv = findParentDiv(e.target);
+  //     if (parentDiv) {
+  //       // console.log(parentDiv);
+  //       setLongPressDetected(true);
+  //       setSelectMsgStatus(true);
+  //       document
+  //         .getElementById(parentDiv.id)
+  //         .parentElement.classList.add("selected");
+  //       setSelectMsg(
+  //         document.getElementById(parentDiv.id).childNodes[0].innerHTML
+  //       );
+  //       // setParentId(parentDiv.id);
+  //     }
+  //   }, 1000);
+  // };
 
-  const handleTouchMove = () => {
-    clearTimeout(pressTimer);
-    setLongPressDetected(false);
-    // setParentId(null);
-  };
+  // const handleTouchMove = () => {
+  //   clearTimeout(pressTimer);
+  //   setLongPressDetected(false);
+  //   // setParentId(null);
+  // };
 
-  const handleTouchEnd = () => {
-    clearTimeout(pressTimer);
-    setLongPressDetected(false);
-    // setParentId(null);
-  };
-  const findParentDiv = (element) => {
-    // Traverse up the DOM tree to find the closest parent div
-    while (element) {
-      if (element.tagName === "DIV") {
-        return element;
-      }
-      element = element.parentElement;
-    }
-    return null;
-  };
-  const handleOptionBack = () => {
-    setSelectMsgStatus(false);
-    document.querySelector(".selected")?.classList.remove("selected");
-  };
-  const handleDeleteSelected = () => {
-    setPersonMsg((prevMsg) =>
-      prevMsg.filter((item) => !item.includes(selectMsg))
-    );
-    console.log(personMsg);
-  };
+  // const handleTouchEnd = () => {
+  //   clearTimeout(pressTimer);
+  //   setLongPressDetected(false);
+  //   // setParentId(null);
+  // };
+  // const findParentDiv = (element) => {
+  //   // Traverse up the DOM tree to find the closest parent div
+  //   while (element) {
+  //     if (element.tagName === "DIV") {
+  //       return element;
+  //     }
+  //     element = element.parentElement;
+  //   }
+  //   return null;
+  // };
+  // const handleOptionBack = () => {
+  //   setSelectMsgStatus(false);
+  //   document.querySelector(".selected")?.classList.remove("selected");
+  // };
+  // const handleDeleteSelected = () => {
+  //   setPersonMsg((prevMsg) =>
+  //     prevMsg.filter((item) => !item.msg.includes(selectMsg))
+  //   );
+  // };
   useEffect(() => {
     scrollToTop();
   }, [personMsg]);
+  // console.log(personMsg);
   return (
     <>
       <div className="single-chat">
@@ -363,36 +355,38 @@ const Chat = ({
           }}
         >
           <div className="inside-chat-text" ref={divRef}>
-            {personMsg.map((value, msgIndex) => (
-              <div
-                className="msgParentDiv"
-                onTouchStart={(e) => handleTouchStart(e)}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-              >
-                <div
-                  className="person-msg-div"
-                  id={`person-msg${msgIndex}`}
-                  key={msgIndex}
-                >
-                  {value.length > 20 ? (
-                    <>
-                      <img className="image-msg" src={value} />
-                      <span className="msg-time">
-                        {personMsgTime[msgIndex]}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="single-msg">{value}</span>
-                      <span className="msg-time">
-                        {personMsgTime[msgIndex]}
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
+            {personMsg &&
+              personMsg.map((item) => {
+                return (
+                  item.name === chatSelect.name &&
+                  item.msg &&
+                  item.msg.map((value, msgIndex) => (
+                    <div className="msgParentDiv">
+                      <div
+                        className="person-msg-div"
+                        id={`person-msg${msgIndex}`}
+                        key={msgIndex}
+                      >
+                        {value.length > 20 ? (
+                          <>
+                            <img className="image-msg" src={value} />
+                            <span className="msg-time">
+                              {item.time[msgIndex]}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="single-msg">{value}</span>
+                            <span className="msg-time">
+                              {item.time[msgIndex]}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                );
+              })}
           </div>
         </div>
         <div className="chat-input-div">
@@ -453,12 +447,7 @@ const Chat = ({
             setEmojiStatus={setEmojiStatus}
           />
         )}
-        {selectMsgStatus && (
-          <SelectionHeader
-            handleOptionBack={handleOptionBack}
-            handleDeleteSelected={handleDeleteSelected}
-          />
-        )}
+        {selectMsgStatus && <SelectionHeader />}
       </div>
     </>
   );

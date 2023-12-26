@@ -33,6 +33,7 @@ const ChatList = ({ handleChatSelect }) => {
             chatListNames.map((item, index) => {
               return (
                 <div
+                  key={index}
                   className="chatPerson-div"
                   onClick={() => {
                     handleChatSelect(item);
